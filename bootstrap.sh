@@ -4,7 +4,7 @@ usage(){
     echo "bootstrap.sh [options]"
     echo "  -b          Set up a obsf4 Tor bridge"
     echo "  -r          Set up a (non-exit) Tor relay"
-    echo "  -x          Set up a Tor exit relay"
+    echo "  -x          Set up a Tor exit relay (default is a reduced exit)"
     exit -1
 }
 
