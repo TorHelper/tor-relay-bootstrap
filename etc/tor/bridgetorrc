@@ -1,0 +1,38 @@
+# The next line enables bridge mode
+
+BridgeRelay 1
+
+# obfs4 is used because it can do IPv4 and IPv6 connections simultaneously
+# The ServerTransportListenAddr line is dual stack friendly
+
+ServerTransportPlugin obfs4 exec /usr/local/bin/obfs4proxy managed 
+ServerTransportListenAddr obfs4 [::]:443
+
+# The ORPort is used by the bridge to communicate with the tor network.
+# The ExtORPort is used internally by obfsproxy according to
+# https://lists.torproject.org/pipermail/tor-relays/2014-February/003909.html
+
+ORPort 12345
+ExtORPort 65432
+
+# Adjust these limits to align with your server's bandwidth caps.
+
+RelayBandwidthRate 30 MBytes
+RelayBandwidthBurst 100 MBytes
+
+# These next lines just dictate that tor can't be used for
+# anything else and that this is not an exit.
+
+SocksPort 0
+SocksPolicy reject *
+ExitPolicy reject *:*
+
+# The next 3 lines seem pretty self-explanatory.
+
+Log notice file /var/log/tor/notices.log
+DataDirectory /var/lib/tor
+RunAsDaemon 1
+
+# By default, bridges are public.
+# Uncomment the following line if you want your bridge to be private.
+#PublishServerDescriptor 0
