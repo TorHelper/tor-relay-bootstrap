@@ -40,4 +40,6 @@ TODO Ideas
 	* Although if we are going to force HTTPS, a [Tor hidden service](http://richardhartmann.de/blog/posts/2015/08/24-Tor-enabled_Debian_mirror/) might be a better idea since it would eliminate more metadata after the initial bootstrap. Much slower overall though so should be opt-in
 * Prompt the user to run [happy-dance.sh](https://github.com/NSAKEY/happy-dance)?
 	* will break older ssh clients but useful to remove harmful ciphers
-
+* Detect other Linux distros and adjust script accordingy
+	* will be a PITA but allows everyone to run the distro of their choice
+	* include BSD and OS X? it's not technically impossible...
