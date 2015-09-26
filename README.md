@@ -16,7 +16,6 @@ tor-relay-bootstrap does the following:
 * Configures sane default firewall rules
 * Configures automatic updates
 * Installs tlsdate to ensure time is synced
-* Installs monit and activate config to auto-restart all services
 * Helps harden the ssh server
 * Gives instructions on what the sysadmin needs to manually do at the end
 
@@ -33,3 +32,12 @@ Rationale for Port choices
 I've decided to change the default ORPort and DirPort on the non-exit and exit relay values to 443 and 80 respectively, along with changing the firewall values to reflect this.
 I've done this primarily to dodge Layer 3 filtering of ports that are common on some public networks. 
 This helps a non-bridge user avoid this basic type of filtering if any of these relays are used as the Guard.
+
+TODO Ideas
+----------
+
+* Pre-package sources.list to have Debian to upgrade over HTTPS, because why not.
+	* Although if we are going to force HTTPS, a [Tor hidden service](http://richardhartmann.de/blog/posts/2015/08/24-Tor-enabled_Debian_mirror/) might be a better idea since it would eliminate more metadata after the initial bootstrap. Much slower overall though so should be opt-in
+* Prompt the user to run [happy-dance.sh](https://github.com/NSAKEY/happy-dance)?
+	* will break older ssh clients but useful to remove harmful ciphers
+
