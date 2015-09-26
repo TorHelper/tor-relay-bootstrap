@@ -53,7 +53,7 @@ if ! grep -q "https://deb.torproject.org/torproject.org" /etc/apt/sources.list; 
 fi
 
 # install tor and related packages
-echo "${GREEN}== Installing Tor and related packages${NC}"
+echo -e "${GREEN}== Installing Tor and related packages${NC}"
 if [[ "$TYPE" == "relay" ]] ||  [[ "$TYPE" == "exit" ]] ; then
     apt-get install -y deb.torproject.org-keyring tor tor-arm tor-geoipdb
 elif [ "$TYPE" == "bridge" ] ; then
