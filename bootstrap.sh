@@ -33,7 +33,7 @@ fi
 PWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # update software
-echo -e "${GREEN}== Updating software"
+echo -e "${GREEN}== Updating software${NC}"
 apt-get update
 apt-get dist-upgrade -y
 
@@ -45,7 +45,7 @@ apt-get install -y lsb-release apt-transport-https
 
 # add official Tor repository w/ https
 if ! grep -q "https://deb.torproject.org/torproject.org" /etc/apt/sources.list; then
-    echo "== Adding the official Tor repository"
+    echo -e "${GREEN}== Adding the official Tor repository${NC}"
     echo "deb https://deb.torproject.org/torproject.org `lsb_release -cs` main" >> /etc/apt/sources.list
     gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
@@ -53,7 +53,7 @@ if ! grep -q "https://deb.torproject.org/torproject.org" /etc/apt/sources.list; 
 fi
 
 # install tor and related packages
-echo "== Installing Tor and related packages"
+echo "${GREEN}== Installing Tor and related packages${NC}"
 if [[ "$TYPE" == "relay" ]] ||  [[ "$TYPE" == "exit" ]] ; then
     apt-get install -y deb.torproject.org-keyring tor tor-arm tor-geoipdb
 elif [ "$TYPE" == "bridge" ] ; then
@@ -72,7 +72,7 @@ elif [ "$TYPE" == "exit" ] ; then
 fi
 
 # configure firewall rules
-echo "== Configuring firewall rules"
+echo -e "${GREEN}== Configuring firewall rules${NC}"
 apt-get install -y debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
@@ -95,7 +95,7 @@ ip6tables-restore < /etc/iptables/rules.v6
 apt-get install -y fail2ban
 
 # configure automatic updates
-echo "== Configuring unattended upgrades"
+echo -e "${GREEN}== Configuring unattended upgrades${NC}"
 apt-get install -y unattended-upgrades apt-listchanges
 cp $PWD/etc/apt/apt.conf.d/20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades
 service unattended-upgrades restart
@@ -111,7 +111,7 @@ apt-get install -y tlsdate
 # configure sshd
 ORIG_USER=$(logname)
 if [ -n "$ORIG_USER" ]; then
-	echo -e "== Configuring sshd ${NC}"
+	echo -e "${GREEN}== Configuring sshd ${NC}"
 	# only allow the current user to SSH in
 	echo "AllowUsers $ORIG_USER" >> /etc/ssh/sshd_config
 	echo "  - SSH login restricted to user: $ORIG_USER"
