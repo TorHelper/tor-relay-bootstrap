@@ -34,7 +34,7 @@ SocksPort 0 # Default: Bind to localhost:9050 for local connections.
 ## may provide sensitive information to an attacker who obtains the logs.
 ##
 ## Send all messages of level 'notice' or higher to /var/log/tor/notices.log
-#Log notice file /var/log/tor/notices.log
+Log notice file /var/log/tor/notices.log
 ## Send every possible message to /var/log/tor/debug.log
 #Log debug file /var/log/tor/debug.log
 ## Use the system log instead of Tor's logfiles
@@ -80,7 +80,7 @@ ControlPort 9051
 ## See https://www.torproject.org/docs/tor-doc-relay for details.
 
 ## Required: what port to advertise for incoming Tor connections.
-ORPort 9001
+ORPort 443
 ## If you want to listen on a port other than the one advertised in
 ## ORPort (e.g. to advertise 443 but bind to 9090), you can do it as
 ## follows.  You'll need to do ipchains or other port forwarding
@@ -90,14 +90,14 @@ ORPort 9001
 
 ## The IP address or full DNS name for incoming connections to your
 ## relay. Leave commented out and Tor will guess.
-Address quasimodo.socentralra.in
+#Address noname.example.com
 
 ## If you have multiple network interfaces, you can specify one for
 ## outgoing traffic to use.
 # OutboundBindAddress 10.0.0.5
 
 ## A handle for your relay, so people don't have to refer to it by key.
-Nickname quasimodo 
+#Nickname hacktheplanet
 
 ## Define these to limit how much relayed traffic you will allow. Your
 ## own traffic is still unthrottled. Note that RelayBandwidthRate must
@@ -129,11 +129,10 @@ Nickname quasimodo
 ## it's an email address and/or generate a new address for this purpose.
 #ContactInfo Random Person <nobody AT example dot com>
 ## You might also include your PGP or GPG fingerprint if you have one:
-ContactInfo 83D3 09AE 31CC 8B58 6EAD 85BE EE40 C97C 1F56 F320 1tBt9p2MYh7eRtKjWfQmA7DZ3eTF59wP8
 
 ## Uncomment this to mirror directory information for others. Please do
 ## if you have enough bandwidth.
-DirPort 9030 # what port to advertise for directory connections
+DirPort 80 # what port to advertise for directory connections
 ## If you want to listen on a port other than the one advertised in
 ## DirPort (e.g. to advertise 80 but bind to 9091), you can do it as
 ## follows.  below too. You'll need to do ipchains or other port
@@ -153,7 +152,7 @@ DirPort 9030 # what port to advertise for directory connections
 ## https://www.torproject.org/docs/faq#MultipleRelays
 ## However, you should never include a bridge's fingerprint here, as it would
 ## break its concealability and potentially reveal its IP/TCP address.
-MyFamily 6BD6EEF56C26C4E955F71F4FAFE31C2D93ED1913,4B37E840A7F26F85BA363927D6C6F2769EB4C918
+#MyFamily $keyid,$keyid,...
 
 ## A comma-separated list of exit policies. They're considered first
 ## to last, and the first match wins. If you want to _replace_
