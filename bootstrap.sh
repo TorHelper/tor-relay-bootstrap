@@ -16,7 +16,7 @@ NC='\e[0m'
 
 # Process options
 unset TYPE
-while getopts "br" option; do
+while getopts "brx" option; do
   case $option in
     b ) [ -n "$TYPE" ] && usage ; TYPE="bridge" ;;
     r ) [ -n "$TYPE" ] && usage ; TYPE="relay" ;;
