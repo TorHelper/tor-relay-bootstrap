@@ -2,7 +2,7 @@
 #Address noname.example.com
 
 ## Set the nickname of this relay
-#Nickname ididnteditheconfig
+#Nickname hacktheplanet
 
 ## Set your own contact info
 #ContactInfo 0xFFFFFFFF Random Person <nobody AT example dot com>
