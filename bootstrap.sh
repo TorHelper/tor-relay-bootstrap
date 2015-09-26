@@ -11,7 +11,6 @@ usage(){
 # pretty colors
 GREEN='\e[0;32m'
 RED='\e[0;31'
-PURPLE='\e[0;35'
 NC='\e[0m'
 
 # Process options
@@ -34,7 +33,7 @@ fi
 PWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # update software
-echo -e "${PURPLE}== Updating software"
+echo -e "${GREEN}== Updating software"
 apt-get update
 apt-get dist-upgrade -y
 
