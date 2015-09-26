@@ -9,7 +9,7 @@ usage(){
 }
 
 # pretty colors
-GREEN='\e0;32m'
+GREEN='\e[0;32m'
 RED='\e[0;31'
 PURPLE='\e[0;35'
 NC='\e[0m'
