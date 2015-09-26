@@ -3,7 +3,7 @@ tor-relay-bootstrap
 
 Simple bash script to bootstrap a Debian server to be a set-and-forget Tor relay, bridge, or exit. This script is meant for a Debian Jessie host.
 
-This project is forked from @micahflee's excellent [tor-relay-bootstrap](https://github.com/micahflee/tor-relay-bootstrap) and merges in some changes that @NSAKEY made in his fork of tor-relay-bootstrap, [tor-bridge-bootstrap](https://github.com/nsakey/tor-bridge-bootstrap).
+This project is forked from [@micahflee](https://github.com/micahflee)'s excellent [tor-relay-bootstrap](https://github.com/micahflee/tor-relay-bootstrap) and merges in some changes that [@NSAKEY](https://github.com/NSAKEY) made in his fork of tor-relay-bootstrap, [tor-bridge-bootstrap](https://github.com/nsakey/tor-bridge-bootstrap).
 I've added the configuration for Tor exits and made the script multi-purpose.
 
 Pull requests are welcome.
