@@ -1,5 +1,8 @@
 #!/bin/sh
 
+set -e # terminate script if any step fails
+set -u # abort if any variables are unset
+
 usage(){
     echo "bootstrap.sh [options]"
     echo "  -b          Set up a obsf4 Tor bridge"
