@@ -67,13 +67,7 @@ fi
 service tor stop
 
 # configure tor
-if [ "$TYPE" = "relay" ] ; then
-    cp $PWD/etc/tor/relaytorrc /etc/tor/torrc
-elif [ "$TYPE" = "bridge" ] ; then
-    cp $PWD/etc/tor/bridgetorrc /etc/tor/torrc
-elif [ "$TYPE" = "exit" ] ; then
-    cp $PWD/etc/tor/exittorrc /etc/tor/torrc
-fi
+cp $PWD/etc/tor/${TYPE}torrc /etc/tor/torrc
 
 # configure firewall rules
 echo_green "== Configuring firewall rules"
@@ -81,16 +75,8 @@ apt-get install -y debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
 apt-get install -y iptables iptables-persistent
-if [ "$TYPE" = "relay" ] ; then
-    cp $PWD/etc/iptables/relayrules.v4 /etc/iptables/rules.v4
-    cp $PWD/etc/iptables/relayrules.v6 /etc/iptables/rules.v6
-elif [ "$TYPE" = "bridge" ] ; then
-    cp $PWD/etc/iptables/bridgerules.v4 /etc/iptables/rules.v4
-    cp $PWD/etc/iptables/bridgerules.v6 /etc/iptables/rules.v6
-elif [ "$TYPE" = "exit" ] ; then
-    cp $PWD/etc/iptables/exitrules.v4 /etc/iptables/rules.v4
-    cp $PWD/etc/iptables/exitrules.v6 /etc/iptables/rules.v6
-fi
+cp $PWD/etc/iptables/${TYPE}rules.v4 /etc/iptables/rules.v4
+cp $PWD/etc/iptables/${TYPE}rules.v6 /etc/iptables/rules.v6
 chmod 600 /etc/iptables/rules.v4
 chmod 600 /etc/iptables/rules.v6
 iptables-restore < /etc/iptables/rules.v4
