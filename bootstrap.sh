@@ -92,8 +92,10 @@ service unattended-upgrades restart
 
 # install apparmor
 apt-get install -y apparmor apparmor-profiles apparmor-utils
-sed -i.bak 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 apparmor=1 security=apparmor"/' /etc/default/grub
-update-grub
+if ! grep -q '^[^#].*apparmor=1' /etc/default/grub; then
+    sed -i.bak 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 apparmor=1 security=apparmor"/' /etc/default/grub
+    update-grub
+fi
 
 # install tlsdate
 apt-get install -y tlsdate
