@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
 usage(){
     echo "bootstrap.sh [options]"
     echo "  -b          Set up a obsf4 Tor bridge"
     echo "  -r          Set up a (non-exit) Tor relay"
     echo "  -x          Set up a Tor exit relay (default is a reduced exit)"
-    exit -1
+    exit 255
 }
 
 # pretty colors
@@ -25,12 +25,12 @@ while getopts "brx" option; do
 done
 
 # check for root
-if [[ $EUID -ne 0 ]]; then
+if [ $(id -u) -ne 0 ]; then
     echo -e "${RED}This script must be run as root${NC}" 1>&2
     exit 1
 fi
 
-PWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PWD="$(dirname "$0")"
 
 # update software
 echo -e "${GREEN}== Updating software${NC}"
@@ -54,20 +54,20 @@ fi
 
 # install tor and related packages
 echo -e "${GREEN}== Installing Tor and related packages${NC}"
-if [[ "$TYPE" == "relay" ]] ||  [[ "$TYPE" == "exit" ]] ; then
+if [ "$TYPE" = "relay" ] ||  [ "$TYPE" = "exit" ] ; then
     apt-get install -y deb.torproject.org-keyring tor tor-arm tor-geoipdb
-elif [ "$TYPE" == "bridge" ] ; then
+elif [ "$TYPE" = "bridge" ] ; then
     apt-get install -y deb.torproject.org-keyring tor tor-arm tor-geoipdb obfsproxy golang libcap2-bin
     go get git.torproject.org/pluggable-transports/obfs4.git/obfs4proxy
 fi
 service tor stop
 
 # configure tor
-if [ "$TYPE" == "relay" ] ; then
+if [ "$TYPE" = "relay" ] ; then
     cp $PWD/etc/tor/relaytorrc /etc/tor/torrc
-elif [ "$TYPE" == "bridge" ] ; then
+elif [ "$TYPE" = "bridge" ] ; then
     cp $PWD/etc/tor/bridgetorrc /etc/tor/torrc
-elif [ "$TYPE" == "exit" ] ; then
+elif [ "$TYPE" = "exit" ] ; then
     cp $PWD/etc/tor/exittorrc /etc/tor/torrc
 fi
 
@@ -77,13 +77,13 @@ apt-get install -y debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
 apt-get install -y iptables iptables-persistent
-if [ "$TYPE" == "relay" ] ; then
+if [ "$TYPE" = "relay" ] ; then
     cp $PWD/etc/iptables/relayrules.v4 /etc/iptables/rules.v4
     cp $PWD/etc/iptables/relayrules.v6 /etc/iptables/rules.v6
-elif [ "$TYPE" == "bridge" ] ; then
+elif [ "$TYPE" = "bridge" ] ; then
     cp $PWD/etc/iptables/bridgerules.v4 /etc/iptables/rules.v4
     cp $PWD/etc/iptables/bridgerules.v6 /etc/iptables/rules.v6
-elif [ "$TYPE" == "exit" ] ; then
+elif [ "$TYPE" = "exit" ] ; then
     cp $PWD/etc/iptables/exitrules.v4 /etc/iptables/rules.v4
     cp $PWD/etc/iptables/exitrules.v6 /etc/iptables/rules.v6
 fi
@@ -119,7 +119,7 @@ if [ -n "$ORIG_USER" ]; then
 		# user has logged in with SSH keys so we can disable password authentication
 		sed -i '/^#\?PasswordAuthentication/c\PasswordAuthentication no' /etc/ssh/sshd_config
 		echo "  - SSH password authentication disabled"
-		if [ $ORIG_USER == "root" ]; then
+		if [ $ORIG_USER = "root" ]; then
 			# user logged in as root directly (rather than using su/sudo) so make sure root login is enabled
 			sed -i '/^#\?PermitRootLogin/c\PermitRootLogin yes' /etc/ssh/sshd_config
 		fi
