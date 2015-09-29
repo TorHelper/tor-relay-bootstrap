@@ -12,9 +12,8 @@ usage(){
 }
 
 # pretty colors
-GREEN='\e[0;32m'
-RED='\e[0;31'
-NC='\e[0m'
+echo_green() { printf "\033[0;32m$1\033[0;39;49m\n"; }
+echo_red() { printf "\033[0;31m$1\033[0;39;49m\n"; }
 
 # Process options
 unset TYPE
@@ -29,14 +28,14 @@ done
 
 # check for root
 if [ $(id -u) -ne 0 ]; then
-    echo -e "${RED}This script must be run as root${NC}" 1>&2
+    echo_red "This script must be run as root" 1>&2
     exit 1
 fi
 
 PWD="$(dirname "$0")"
 
 # update software
-echo -e "${GREEN}== Updating software${NC}"
+echo_green "== Updating software"
 apt-get update
 apt-get dist-upgrade -y
 
@@ -48,7 +47,7 @@ apt-get install -y lsb-release apt-transport-https
 
 # add official Tor repository w/ https
 if ! grep -q "https://deb.torproject.org/torproject.org" /etc/apt/sources.list; then
-    echo -e "${GREEN}== Adding the official Tor repository${NC}"
+    echo_green "== Adding the official Tor repository"
     echo "deb https://deb.torproject.org/torproject.org `lsb_release -cs` main" >> /etc/apt/sources.list
     gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
@@ -56,7 +55,7 @@ if ! grep -q "https://deb.torproject.org/torproject.org" /etc/apt/sources.list; 
 fi
 
 # install tor and related packages
-echo -e "${GREEN}== Installing Tor and related packages${NC}"
+echo_green "== Installing Tor and related packages"
 if [ "$TYPE" = "relay" ] ||  [ "$TYPE" = "exit" ] ; then
     apt-get install -y deb.torproject.org-keyring tor tor-arm tor-geoipdb
 elif [ "$TYPE" = "bridge" ] ; then
@@ -75,7 +74,7 @@ elif [ "$TYPE" = "exit" ] ; then
 fi
 
 # configure firewall rules
-echo -e "${GREEN}== Configuring firewall rules${NC}"
+echo_green "== Configuring firewall rules"
 apt-get install -y debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
@@ -98,7 +97,7 @@ ip6tables-restore < /etc/iptables/rules.v6
 apt-get install -y fail2ban
 
 # configure automatic updates
-echo -e "${GREEN}== Configuring unattended upgrades${NC}"
+echo_green "== Configuring unattended upgrades"
 apt-get install -y unattended-upgrades apt-listchanges
 cp $PWD/etc/apt/apt.conf.d/20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades
 service unattended-upgrades restart
@@ -114,7 +113,7 @@ apt-get install -y tlsdate
 # configure sshd
 ORIG_USER=$(logname)
 if [ -n "$ORIG_USER" ]; then
-	echo -e "${GREEN}== Configuring sshd ${NC}"
+	echo_green "== Configuring sshd"
 	# only allow the current user to SSH in
 	echo "AllowUsers $ORIG_USER" >> /etc/ssh/sshd_config
 	echo "  - SSH login restricted to user: $ORIG_USER"
@@ -128,27 +127,30 @@ if [ -n "$ORIG_USER" ]; then
 		fi
 	else
 		# user logged in with a password rather than keys
-		echo -e "${RED}  - You do not appear to be using SSH key authentication.  You should set this up manually now.${NC}"
+		echo_red "  - You do not appear to be using SSH key authentication."
+		echo_red "    You should set this up manually now."
 	fi
 	service ssh reload
 else
-	echo -e "${RED}== Could not configure sshd automatically.  You will need to do this manually.${NC}"
+	echo_red "== Could not configure sshd automatically.  You will need to do this manually."
 fi
 
 # final instructions
-echo ""
-echo -e "${GREEN}== Try SSHing into this server again in a new window, to confirm the firewall isn't broken"
-echo ""
-echo "== Edit /etc/tor/torrc"
-echo "  - Set Address, Nickname, Contact Info, and MyFamily for your Tor relay"
-echo "  - Optional: include a Bitcoin address in the 'ContactInfo' line"
-echo "  - This will enable you to receive donations from OnionTip.com"
-echo ""
-echo "== Register your new Tor relay at Tor Weather (https://weather.torproject.org/)"
-echo "   to get automatic emails about its status"
-echo ""
-echo "== Consider having /etc/apt/sources.list update over HTTPS and/or HTTPS+Tor"
-echo "   see https://guardianproject.info/2014/10/16/reducing-metadata-leakage-from-software-updates/"
-echo "   for more details"
-echo ""
-echo -e "== REBOOT THIS SERVER${NC}"
+echo_green "
+== Try SSHing into this server again in a new window, to confirm the firewall
+   isn't broken
+
+== Edit /etc/tor/torrc
+  - Set Address, Nickname, Contact Info, and MyFamily for your Tor relay
+  - Optional: include a Bitcoin address in the 'ContactInfo' line
+  - This will enable you to receive donations from OnionTip.com
+
+== Register your new Tor relay at Tor Weather (https://weather.torproject.org/)
+   to get automatic emails about its status
+
+== Consider having /etc/apt/sources.list update over HTTPS and/or HTTPS+Tor
+   see https://guardianproject.info/2014/10/16/reducing-metadata-leakage-from-software-updates/
+   for more details
+
+== REBOOT THIS SERVER
+"
