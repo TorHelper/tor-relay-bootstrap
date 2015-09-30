@@ -1,151 +1,174 @@
-#!/bin/bash
+#!/bin/sh
+
+set -e # terminate script if any step fails
+set -u # abort if any variables are unset
 
 usage(){
     echo "bootstrap.sh [options]"
     echo "  -b          Set up a obsf4 Tor bridge"
     echo "  -r          Set up a (non-exit) Tor relay"
     echo "  -x          Set up a Tor exit relay (default is a reduced exit)"
-    exit -1
+    exit 255
 }
 
 # pretty colors
-GREEN='\e[0;32m'
-RED='\e[0;31'
-NC='\e[0m'
+echo_green() { printf "\033[0;32m$1\033[0;39;49m\n"; }
+echo_red() { printf "\033[0;31m$1\033[0;39;49m\n"; }
 
 # Process options
-unset TYPE
 while getopts "brx" option; do
   case $option in
-    b ) [ -n "$TYPE" ] && usage ; TYPE="bridge" ;;
-    r ) [ -n "$TYPE" ] && usage ; TYPE="relay" ;;
-    x ) [ -n "$TYPE" ] && usage ; TYPE="exit" ;;
+    b ) TYPE="bridge" ;;
+    r ) TYPE="relay" ;;
+    x ) TYPE="exit" ;;
     * ) usage ;;
     esac
 done
 
+if [ -z ${TYPE:-} ]; then
+   usage
+fi
+
 # check for root
-if [[ $EUID -ne 0 ]]; then
-    echo -e "${RED}This script must be run as root${NC}" 1>&2
+if [ $(id -u) -ne 0 ]; then
+    echo_red "This script must be run as root" 1>&2
     exit 1
 fi
 
-PWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PWD="$(dirname "$0")"
+
+# packages that we always install
+TORPKGSCOMMON="deb.torproject.org-keyring tor tor-arm tor-geoipdb"
 
 # update software
-echo -e "${GREEN}== Updating software${NC}"
-apt-get update
-apt-get dist-upgrade -y
+echo_green "== Updating software"
+apt-get --quiet update
+apt-get --quiet --yes dist-upgrade
 
 # apt-transport-https allows https debian mirrors. it's more fun that way.
 # https://guardianproject.info/2014/10/16/reducing-metadata-leakage-from-software-updates/
 # granted it doesn't fix *all* metadata problems
 # see https://labs.riseup.net/code/issues/8143 for more on this discussion
-apt-get install -y lsb-release apt-transport-https
 
-# add official Tor repository w/ https
-if ! grep -q "https://deb.torproject.org/torproject.org" /etc/apt/sources.list; then
-    echo -e "${GREEN}== Adding the official Tor repository${NC}"
-    echo "deb https://deb.torproject.org/torproject.org `lsb_release -cs` main" >> /etc/apt/sources.list
-    gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
-    gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
-    apt-get update
+# One reason not to use HTTPS is when using apt-cacher-ng which as of the
+# version in Jessie does not support fetching via HTTPS. apt-cacher-ng listens
+# on port 3142 by default. Since the apt config lines can span multiple lines
+# we'll do a dumb check for '3142' in the config files. If it's found we'll
+# add the HTTP repository.
+if ! grep -r ':3142\(\/\)\?"' /etc/apt/apt.conf* > /dev/null 2>&1 ; then
+    apt-get --yes --quiet install lsb-release apt-transport-https
+    DEBPROTO='https'
+else
+    apt-get --yes --quiet install lsb-release
+    DEBPROTO='http'
+fi
+
+# add official Tor repository w/ http(s)
+if ! grep -rq "https\?:\/\/deb\.torproject\.org\/torproject\.org" /etc/apt/sources.list*; then
+    echo_green "== Adding the official Tor repository"
+    if [ $DEBPROTO != 'https' ]; then
+        echo_red 'Not using HTTPS for the Tor repository'
+    fi
+    echo "deb $DEBPROTO://deb.torproject.org/torproject.org `lsb_release -cs` main" >> /etc/apt/sources.list
+    apt-key adv --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
+    apt-get --quiet update
 fi
 
 # install tor and related packages
-echo -e "${GREEN}== Installing Tor and related packages${NC}"
-if [[ "$TYPE" == "relay" ]] ||  [[ "$TYPE" == "exit" ]] ; then
-    apt-get install -y deb.torproject.org-keyring tor tor-arm tor-geoipdb
-elif [ "$TYPE" == "bridge" ] ; then
-    apt-get install -y deb.torproject.org-keyring tor tor-arm tor-geoipdb obfsproxy golang libcap2-bin
+echo_green "== Installing Tor and related packages"
+if [ "$TYPE" = "relay" ] ||  [ "$TYPE" = "exit" ] ; then
+    apt-get --yes --quiet install $TORPKGSCOMMON
+elif [ "$TYPE" = "bridge" ] ; then
+    apt-get --quiet --yes install $TORPKGSCOMMON git obfsproxy golang libcap2-bin
+    export OLDGOPATH="${GOPATH:-}"
+    export GOPATH="$(mktemp -d)"
     go get git.torproject.org/pluggable-transports/obfs4.git/obfs4proxy
+    mv -f "$GOPATH"/bin/obfs4proxy /usr/local/bin
+    rm -rf "$GOPATH"
+    export GOPATH="$OLDGOPATH"
 fi
 service tor stop
 
 # configure tor
-if [ "$TYPE" == "relay" ] ; then
-    cp $PWD/etc/tor/relaytorrc /etc/tor/torrc
-elif [ "$TYPE" == "bridge" ] ; then
-    cp $PWD/etc/tor/bridgetorrc /etc/tor/torrc
-elif [ "$TYPE" == "exit" ] ; then
-    cp $PWD/etc/tor/exittorrc /etc/tor/torrc
-fi
+cp $PWD/etc/tor/${TYPE}torrc /etc/tor/torrc
 
 # configure firewall rules
-echo -e "${GREEN}== Configuring firewall rules${NC}"
-apt-get install -y debconf-utils
+echo_green "== Configuring firewall rules"
+apt-get --quiet --yes install debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
-apt-get install -y iptables iptables-persistent
-if [ "$TYPE" == "relay" ] ; then
-    cp $PWD/etc/iptables/relayrules.v4 /etc/iptables/rules.v4
-    cp $PWD/etc/iptables/relayrules.v6 /etc/iptables/rules.v6
-elif [ "$TYPE" == "bridge" ] ; then
-    cp $PWD/etc/iptables/bridgerules.v4 /etc/iptables/rules.v4
-    cp $PWD/etc/iptables/bridgerules.v6 /etc/iptables/rules.v6
-elif [ "$TYPE" == "exit" ] ; then
-    cp $PWD/etc/iptables/exitrules.v4 /etc/iptables/rules.v4
-    cp $PWD/etc/iptables/exitrules.v6 /etc/iptables/rules.v6
-fi
+apt-get install --quiet --yes iptables iptables-persistent
+cp $PWD/etc/iptables/${TYPE}rules.v4 /etc/iptables/rules.v4
+cp $PWD/etc/iptables/${TYPE}rules.v6 /etc/iptables/rules.v6
 chmod 600 /etc/iptables/rules.v4
 chmod 600 /etc/iptables/rules.v6
 iptables-restore < /etc/iptables/rules.v4
 ip6tables-restore < /etc/iptables/rules.v6
 
-apt-get install -y fail2ban
+apt-get --quiet --yes install fail2ban
 
 # configure automatic updates
-echo -e "${GREEN}== Configuring unattended upgrades${NC}"
-apt-get install -y unattended-upgrades apt-listchanges
+echo_green "== Configuring unattended upgrades"
+apt-get --yes --quiet install unattended-upgrades apt-listchanges
 cp $PWD/etc/apt/apt.conf.d/20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades
 service unattended-upgrades restart
 
 # install apparmor
-apt-get install -y apparmor apparmor-profiles apparmor-utils
-sed -i.bak 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 apparmor=1 security=apparmor"/' /etc/default/grub
-update-grub
+apt-get --quiet --yes install apparmor apparmor-profiles apparmor-utils
+if ! grep -q '^[^#].*apparmor=1' /etc/default/grub; then
+    sed -i.bak 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 apparmor=1 security=apparmor"/' /etc/default/grub
+    update-grub
+fi
 
 # install tlsdate
-apt-get install -y tlsdate
+apt-get --yes --quiet install tlsdate
 
 # configure sshd
 ORIG_USER=$(logname)
 if [ -n "$ORIG_USER" ]; then
-	echo -e "${GREEN}== Configuring sshd ${NC}"
-	# only allow the current user to SSH in
-	echo "AllowUsers $ORIG_USER" >> /etc/ssh/sshd_config
-	echo "  - SSH login restricted to user: $ORIG_USER"
-	if grep -q "Accepted publickey for $ORIG_USER" /var/log/auth.log; then
-		# user has logged in with SSH keys so we can disable password authentication
-		sed -i '/^#\?PasswordAuthentication/c\PasswordAuthentication no' /etc/ssh/sshd_config
-		echo "  - SSH password authentication disabled"
-		if [ $ORIG_USER == "root" ]; then
-			# user logged in as root directly (rather than using su/sudo) so make sure root login is enabled
-			sed -i '/^#\?PermitRootLogin/c\PermitRootLogin yes' /etc/ssh/sshd_config
-		fi
-	else
-		# user logged in with a password rather than keys
-		echo -e "${RED}  - You do not appear to be using SSH key authentication.  You should set this up manually now.${NC}"
-	fi
-	service ssh reload
+    echo_green "== Configuring sshd"
+    # Remove any existing AllowUsers lines
+    if grep -q '^AllowUsers' /etc/ssh/sshd_config; then
+        sed -i.bak '/^AllowUsers/d' /etc/ssh/sshd_config
+    fi
+    # only allow the current user to SSH in
+    echo "AllowUsers $ORIG_USER" >> /etc/ssh/sshd_config
+    echo_green "  - SSH login restricted to user: $ORIG_USER"
+    if grep -q "Accepted publickey for $ORIG_USER" /var/log/auth.log; then
+        # user has logged in with SSH keys so we can disable password authentication
+        sed -i '/^#\?PasswordAuthentication/c\PasswordAuthentication no' /etc/ssh/sshd_config
+        echo_green "  - SSH password authentication disabled"
+        if [ $ORIG_USER = "root" ]; then
+            # user logged in as root directly (rather than using su/sudo) so make sure root login is enabled
+            sed -i '/^#\?PermitRootLogin/c\PermitRootLogin yes' /etc/ssh/sshd_config
+        fi
+    else
+        # user logged in with a password rather than keys
+        echo_red "  - You do not appear to be using SSH key authentication."
+        echo_red "    You should set this up manually now."
+    fi
+    service ssh reload
 else
-	echo -e "${RED}== Could not configure sshd automatically.  You will need to do this manually.${NC}"
+    echo_red "== Could not configure sshd automatically."
+    echo_red "   You will need to do this manually."
 fi
 
 # final instructions
-echo ""
-echo -e "${GREEN}== Try SSHing into this server again in a new window, to confirm the firewall isn't broken"
-echo ""
-echo "== Edit /etc/tor/torrc"
-echo "  - Set Address, Nickname, Contact Info, and MyFamily for your Tor relay"
-echo "  - Optional: include a Bitcoin address in the 'ContactInfo' line"
-echo "  - This will enable you to receive donations from OnionTip.com"
-echo ""
-echo "== Register your new Tor relay at Tor Weather (https://weather.torproject.org/)"
-echo "   to get automatic emails about its status"
-echo ""
-echo "== Consider having /etc/apt/sources.list update over HTTPS and/or HTTPS+Tor"
-echo "   see https://guardianproject.info/2014/10/16/reducing-metadata-leakage-from-software-updates/"
-echo "   for more details"
-echo ""
-echo -e "== REBOOT THIS SERVER${NC}"
+echo_green "
+== Try SSHing into this server again in a new window, to confirm the firewall
+   isn't broken
+
+== Edit /etc/tor/torrc
+  - Set Address, Nickname, Contact Info, and MyFamily for your Tor relay
+  - Optional: include a Bitcoin address in the 'ContactInfo' line
+  - This will enable you to receive donations from OnionTip.com
+
+== Register your new Tor relay at Tor Weather (https://weather.torproject.org/)
+   to get automatic emails about its status
+
+== Consider having /etc/apt/sources.list update over HTTPS and/or HTTPS+Tor
+   see https://guardianproject.info/2014/10/16/reducing-metadata-leakage-from-software-updates/
+   for more details
+
+== REBOOT THIS SERVER
+"
