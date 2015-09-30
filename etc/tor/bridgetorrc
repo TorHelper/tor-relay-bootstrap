@@ -5,7 +5,7 @@ BridgeRelay 1
 # obfs4 is used because it can do IPv4 and IPv6 connections simultaneously
 # The ServerTransportListenAddr line is dual stack friendly
 
-ServerTransportPlugin obfs4 exec /usr/local/bin/obfs4proxy managed 
+ServerTransportPlugin obfs4 exec /usr/local/bin/obfs4proxy managed
 ServerTransportListenAddr obfs4 [::]:443
 
 # The ORPort is used by the bridge to communicate with the tor network.
