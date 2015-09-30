@@ -79,8 +79,13 @@ echo_green "== Installing Tor and related packages"
 if [ "$TYPE" = "relay" ] ||  [ "$TYPE" = "exit" ] ; then
     apt-get --yes --quiet install $TORPKGSCOMMON
 elif [ "$TYPE" = "bridge" ] ; then
-    apt-get --quiet --yes install $TORPKGSCOMMON obfsproxy golang libcap2-bin
+    apt-get --quiet --yes install $TORPKGSCOMMON git obfsproxy golang libcap2-bin
+    export OLDGOPATH="${GOPATH:-}"
+    export GOPATH="$(mktemp -d)"
     go get git.torproject.org/pluggable-transports/obfs4.git/obfs4proxy
+    mv -f "$GOPATH"/bin/obfs4proxy /usr/local/bin
+    rm -rf "$GOPATH"
+    export GOPATH="$OLDGOPATH"
 fi
 service tor stop
 
