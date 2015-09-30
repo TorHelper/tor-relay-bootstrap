@@ -49,12 +49,27 @@ apt-get --quiet --yes dist-upgrade
 # https://guardianproject.info/2014/10/16/reducing-metadata-leakage-from-software-updates/
 # granted it doesn't fix *all* metadata problems
 # see https://labs.riseup.net/code/issues/8143 for more on this discussion
-apt-get --yes --quiet install lsb-release apt-transport-https
 
-# add official Tor repository w/ https
+# One reason not to use HTTPS is when using apt-cacher-ng which as of the
+# version in Jessie does not support fetching via HTTPS. apt-cacher-ng listens
+# on port 3142 by default. Since the apt config lines can span multiple lines
+# we'll do a dumb check for '3142' in the config files. If it's found we'll
+# add the HTTP repository.
+if ! grep -r ':3142\(\/\)\?"' /etc/apt/apt.conf* > /dev/null 2>&1 ; then
+    apt-get --yes --quiet install lsb-release apt-transport-https
+    DEBPROTO='https'
+else
+    apt-get --yes --quiet install lsb-release
+    DEBPROTO='http'
+fi
+
+# add official Tor repository w/ http(s)
 if ! grep -rq "https\?:\/\/deb\.torproject\.org\/torproject\.org" /etc/apt/sources.list*; then
     echo_green "== Adding the official Tor repository"
-    echo "deb https://deb.torproject.org/torproject.org `lsb_release -cs` main" >> /etc/apt/sources.list
+    if [ $DEBPROTO != 'https' ]; then
+        echo_red 'Not using HTTPS for the Tor repository'
+    fi
+    echo "deb $DEBPROTO://deb.torproject.org/torproject.org `lsb_release -cs` main" >> /etc/apt/sources.list
     apt-key adv --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
     apt-get --quiet update
 fi
