@@ -42,29 +42,29 @@ TORPKGSCOMMON="deb.torproject.org-keyring tor tor-arm tor-geoipdb"
 
 # update software
 echo_green "== Updating software"
-apt-get update
-apt-get dist-upgrade -y
+apt-get --quiet update
+apt-get --quiet --yes dist-upgrade
 
 # apt-transport-https allows https debian mirrors. it's more fun that way.
 # https://guardianproject.info/2014/10/16/reducing-metadata-leakage-from-software-updates/
 # granted it doesn't fix *all* metadata problems
 # see https://labs.riseup.net/code/issues/8143 for more on this discussion
-apt-get install -y lsb-release apt-transport-https
+apt-get --yes --quiet install lsb-release apt-transport-https
 
 # add official Tor repository w/ https
 if ! fgrep -rq "https://deb.torproject.org/torproject.org" /etc/apt/sources.list*; then
     echo_green "== Adding the official Tor repository"
     echo "deb https://deb.torproject.org/torproject.org `lsb_release -cs` main" >> /etc/apt/sources.list
     apt-key adv --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
-    apt-get update
+    apt-get --quiet update
 fi
 
 # install tor and related packages
 echo_green "== Installing Tor and related packages"
 if [ "$TYPE" = "relay" ] ||  [ "$TYPE" = "exit" ] ; then
-    apt-get install -y $TORPKGSCOMMON
+    apt-get --yes --quiet install $TORPKGSCOMMON
 elif [ "$TYPE" = "bridge" ] ; then
-    apt-get install -y $TORPKGSCOMMON obfsproxy golang libcap2-bin
+    apt-get --quiet --yes install $TORPKGSCOMMON obfsproxy golang libcap2-bin
     go get git.torproject.org/pluggable-transports/obfs4.git/obfs4proxy
 fi
 service tor stop
@@ -74,10 +74,10 @@ cp $PWD/etc/tor/${TYPE}torrc /etc/tor/torrc
 
 # configure firewall rules
 echo_green "== Configuring firewall rules"
-apt-get install -y debconf-utils
+apt-get --quiet --yes install debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
-apt-get install -y iptables iptables-persistent
+apt-get install --quiet --yes iptables iptables-persistent
 cp $PWD/etc/iptables/${TYPE}rules.v4 /etc/iptables/rules.v4
 cp $PWD/etc/iptables/${TYPE}rules.v6 /etc/iptables/rules.v6
 chmod 600 /etc/iptables/rules.v4
@@ -85,23 +85,23 @@ chmod 600 /etc/iptables/rules.v6
 iptables-restore < /etc/iptables/rules.v4
 ip6tables-restore < /etc/iptables/rules.v6
 
-apt-get install -y fail2ban
+apt-get --quiet --yes install fail2ban
 
 # configure automatic updates
 echo_green "== Configuring unattended upgrades"
-apt-get install -y unattended-upgrades apt-listchanges
+apt-get --yes --quiet install unattended-upgrades apt-listchanges
 cp $PWD/etc/apt/apt.conf.d/20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades
 service unattended-upgrades restart
 
 # install apparmor
-apt-get install -y apparmor apparmor-profiles apparmor-utils
+apt-get --quiet --yes install apparmor apparmor-profiles apparmor-utils
 if ! grep -q '^[^#].*apparmor=1' /etc/default/grub; then
     sed -i.bak 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 apparmor=1 security=apparmor"/' /etc/default/grub
     update-grub
 fi
 
 # install tlsdate
-apt-get install -y tlsdate
+apt-get --yes --quiet install tlsdate
 
 # configure sshd
 ORIG_USER=$(logname)
