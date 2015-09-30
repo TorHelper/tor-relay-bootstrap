@@ -52,7 +52,7 @@ apt-get --quiet --yes dist-upgrade
 apt-get --yes --quiet install lsb-release apt-transport-https
 
 # add official Tor repository w/ https
-if ! fgrep -rq "https://deb.torproject.org/torproject.org" /etc/apt/sources.list*; then
+if ! grep -rq "https\?:\/\/deb\.torproject\.org\/torproject\.org" /etc/apt/sources.list*; then
     echo_green "== Adding the official Tor repository"
     echo "deb https://deb.torproject.org/torproject.org `lsb_release -cs` main" >> /etc/apt/sources.list
     apt-key adv --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
