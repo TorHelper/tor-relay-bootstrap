@@ -107,6 +107,10 @@ apt-get --yes --quiet install tlsdate
 ORIG_USER=$(logname)
 if [ -n "$ORIG_USER" ]; then
     echo_green "== Configuring sshd"
+    # Remove any existing AllowUsers lines
+    if grep -q '^AllowUsers' /etc/ssh/sshd_config; then
+        sed -i.bak '/^AllowUsers/d' /etc/ssh/sshd_config
+    fi
     # only allow the current user to SSH in
     echo "AllowUsers $ORIG_USER" >> /etc/ssh/sshd_config
     echo "  - SSH login restricted to user: $ORIG_USER"
