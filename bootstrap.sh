@@ -106,26 +106,26 @@ apt-get --yes --quiet install tlsdate
 # configure sshd
 ORIG_USER=$(logname)
 if [ -n "$ORIG_USER" ]; then
-	echo_green "== Configuring sshd"
-	# only allow the current user to SSH in
-	echo "AllowUsers $ORIG_USER" >> /etc/ssh/sshd_config
-	echo "  - SSH login restricted to user: $ORIG_USER"
-	if grep -q "Accepted publickey for $ORIG_USER" /var/log/auth.log; then
-		# user has logged in with SSH keys so we can disable password authentication
-		sed -i '/^#\?PasswordAuthentication/c\PasswordAuthentication no' /etc/ssh/sshd_config
-		echo "  - SSH password authentication disabled"
-		if [ $ORIG_USER = "root" ]; then
-			# user logged in as root directly (rather than using su/sudo) so make sure root login is enabled
-			sed -i '/^#\?PermitRootLogin/c\PermitRootLogin yes' /etc/ssh/sshd_config
-		fi
-	else
-		# user logged in with a password rather than keys
-		echo_red "  - You do not appear to be using SSH key authentication."
-		echo_red "    You should set this up manually now."
-	fi
-	service ssh reload
+    echo_green "== Configuring sshd"
+    # only allow the current user to SSH in
+    echo "AllowUsers $ORIG_USER" >> /etc/ssh/sshd_config
+    echo "  - SSH login restricted to user: $ORIG_USER"
+    if grep -q "Accepted publickey for $ORIG_USER" /var/log/auth.log; then
+        # user has logged in with SSH keys so we can disable password authentication
+        sed -i '/^#\?PasswordAuthentication/c\PasswordAuthentication no' /etc/ssh/sshd_config
+        echo "  - SSH password authentication disabled"
+        if [ $ORIG_USER = "root" ]; then
+            # user logged in as root directly (rather than using su/sudo) so make sure root login is enabled
+            sed -i '/^#\?PermitRootLogin/c\PermitRootLogin yes' /etc/ssh/sshd_config
+        fi
+    else
+        # user logged in with a password rather than keys
+        echo_red "  - You do not appear to be using SSH key authentication."
+        echo_red "    You should set this up manually now."
+    fi
+    service ssh reload
 else
-	echo_red "== Could not configure sshd automatically.  You will need to do this manually."
+    echo_red "== Could not configure sshd automatically.  You will need to do this manually."
 fi
 
 # final instructions
