@@ -21,7 +21,7 @@ while getopts "brx" option; do
     b ) TYPE="bridge" ;;
     r ) TYPE="relay" ;;
     x ) TYPE="exit" ;;
-    * ) usage ; exit 2 ;;
+    * ) usage ;;
     esac
 done
 
