@@ -149,7 +149,8 @@ if [ -n "$ORIG_USER" ]; then
     fi
     service ssh reload
 else
-    echo_red "== Could not configure sshd automatically.  You will need to do this manually."
+    echo_red "== Could not configure sshd automatically."
+    echo_red "   You will need to do this manually."
 fi
 
 # final instructions
