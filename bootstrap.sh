@@ -16,15 +16,18 @@ echo_green() { printf "\033[0;32m$1\033[0;39;49m\n"; }
 echo_red() { printf "\033[0;31m$1\033[0;39;49m\n"; }
 
 # Process options
-unset TYPE
 while getopts "brx" option; do
   case $option in
-    b ) [ -n "$TYPE" ] && usage ; TYPE="bridge" ;;
-    r ) [ -n "$TYPE" ] && usage ; TYPE="relay" ;;
-    x ) [ -n "$TYPE" ] && usage ; TYPE="exit" ;;
-    * ) usage ;;
+    b ) TYPE="bridge" ;;
+    r ) TYPE="relay" ;;
+    x ) TYPE="exit" ;;
+    * ) usage ; exit 2 ;;
     esac
 done
+
+if [ -z ${TYPE:-} ]; then
+   usage
+fi
 
 # check for root
 if [ $(id -u) -ne 0 ]; then
