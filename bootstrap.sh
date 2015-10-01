@@ -39,14 +39,11 @@ PWD="$(dirname "$0")"
 
 # packages that we always install
 TORPKGSCOMMON="deb.torproject.org-keyring tor tor-arm tor-geoipdb tlsdate fail2ban \
-apparmor apparmor-profiles apparmor-utils unattended-upgrades apt-listchanges lsb-release\
+apparmor apparmor-profiles apparmor-utils unattended-upgrades apt-listchanges \
 debconf-utils iptables iptables-persistent"
 
 # packages that a bridge needs
 TORBRIDGEPKG="git obfsproxy golang libcap2-bin"
-
-# packages that apt over https needs
-HTTPSPKG="apt-transport-https"
 
 # update software
 echo_green "== Updating software"
@@ -57,16 +54,21 @@ apt-get --quiet --yes dist-upgrade
 # https://guardianproject.info/2014/10/16/reducing-metadata-leakage-from-software-updates/
 # granted it doesn't fix *all* metadata problems
 # see https://labs.riseup.net/code/issues/8143 for more on this discussion
-
+#
 # One reason not to use HTTPS is when using apt-cacher-ng which as of the
 # version in Jessie does not support fetching via HTTPS. apt-cacher-ng listens
 # on port 3142 by default. Since the apt config lines can span multiple lines
 # we'll do a dumb check for '3142' in the config files. If it's found we'll
 # add the HTTP repository.
+
+# DO NOT TRY TO REDUCE THESE PACKAGES INTO $TORPKGSCOMMON
+# THINGS WILL BREAK
+# see https://github.com/colinmahns/tor-relay-bootstrap/commit/8cbfe26599232692c8c570405dba104e7548cf29
 if ! grep -r ':3142\(\/\)\?"' /etc/apt/apt.conf* > /dev/null 2>&1 ; then
-    TORPKGSCOMMON='$TORCOMMON $HTTPSPKG'
+    apt-get --yes --quiet install lsb-release apt-transport-https
     DEBPROTO='https'
 else
+    apt-get --yes --quiet install lsb-release
     DEBPROTO='http'
 fi
 
