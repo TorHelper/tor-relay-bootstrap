@@ -22,6 +22,7 @@ tor-relay-bootstrap does the following:
 To use it, set up a Debian server, SSH into it, switch to the root user, and:
 
 ```sh
+apt-get install git
 git clone https://github.com/micahflee/tor-relay-bootstrap.git
 cd tor-relay-bootstrap
 ./bootstrap.sh
